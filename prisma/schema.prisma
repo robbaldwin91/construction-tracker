@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Map {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  imagePath     String
+  naturalWidth  Int?
+  naturalHeight Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  plots         Plot[]
+
+  @@map("maps")
+}
+
+model Plot {
+  id          String     @id @default(cuid())
+  mapId       String
+  map         Map        @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  contractor  String?
+  notes       String?
+  latitude    Float
+  longitude   Float
+  coordinates Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // New columns
+  streetAddress        String?
+  homebuilderId        String?
+  homebuilder          Homebuilder?     @relation(fields: [homebuilderId], references: [id])
+  constructionTypeId   String?
+  constructionType     ConstructionType? @relation(fields: [constructionTypeId], references: [id])
+  unitTypeId          String?
+  unitType            UnitType?        @relation(fields: [unitTypeId], references: [id])
+  numberOfBeds        Int?
+  numberOfStoreys     Int?
+  squareFootage       Float?
+  minimumSalePrice    Float?
+  
+  // Relations
+  constructionProgress ConstructionProgress[]
+
+  @@unique([mapId, name], name: "map_plot_name_unique")
+  @@map("plots")
+}
+
+model Homebuilder {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  contactEmail String?
+  contactPhone String?
+  address      String?
+  website      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  plots        Plot[]
+
+  @@map("homebuilders")
+}
+
+model ConstructionType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  plots              Plot[]
+  constructionStages ConstructionStage[]
+
+  @@map("construction_types")
+}
+
+model ConstructionStage {
+  id                   String           @id @default(cuid())
+  constructionTypeId   String
+  constructionType     ConstructionType @relation(fields: [constructionTypeId], references: [id], onDelete: Cascade)
+  name                 String
+  description          String?
+  sortOrder            Int
+  color                String
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  
+  constructionProgress ConstructionProgress[]
+
+  @@unique([constructionTypeId, sortOrder], name: "construction_type_sort_order_unique")
+  @@map("construction_stages")
+}
+
+model UnitType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  plots       Plot[]
+
+  @@map("unit_types")
+}
+
+model ConstructionProgress {
+  id                    String            @id @default(cuid())
+  plotId                String
+  plot                  Plot              @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  constructionStageId   String
+  constructionStage     ConstructionStage @relation(fields: [constructionStageId], references: [id], onDelete: Cascade)
+  
+  // Programme dates (baseline - never change once set)
+  programmeStartDate    DateTime?
+  programmeEndDate      DateTime?
+  
+  // Current planned dates (latest plan - can change multiple times)
+  plannedStartDate      DateTime?
+  plannedEndDate        DateTime?
+  currentPlanVersion    Int               @default(1)  // Current version number for planned dates
+  
+  // Actual dates (facts - cannot be changed once set)
+  actualStartDate       DateTime?
+  actualEndDate         DateTime?
+  
+  // Legacy field for percentage tracking
+  completionPercentage  Int               @default(0)
+  
+  notes                 String?
+  recordedBy            String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
+  // Plan change history
+  planHistory           ConstructionPlanHistory[]
+
+  @@unique([plotId, constructionStageId], name: "plot_stage_unique")
+  @@map("construction_progress")
+}
+
+model ConstructionPlanHistory {
+  id                      String               @id @default(cuid())
+  constructionProgressId  String
+  constructionProgress    ConstructionProgress @relation(fields: [constructionProgressId], references: [id], onDelete: Cascade)
+  
+  versionNumber           Int                  // Version number for this plan (1, 2, 3, etc.)
+  plannedStartDate        DateTime?
+  plannedEndDate          DateTime?
+  reason                  String?              // Why the plan changed
+  changedBy               String?              // Who made the change
+  createdAt               DateTime             @default(now())
+
+  @@unique([constructionProgressId, versionNumber], name: "progress_version_unique")
+  @@map("construction_plan_history")
+}

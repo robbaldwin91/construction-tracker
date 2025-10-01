@@ -28,14 +28,57 @@ body {
 
 @layer components {
   .map-container {
-    @apply w-full h-screen relative overflow-hidden;
+    @apply w-full relative overflow-hidden;
   }
   
   .plot-modal {
     @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+    animation: fadeIn 0.2s ease-out;
   }
   
   .modal-content {
     @apply bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl;
+    animation: slideInUp 0.3s ease-out;
   }
+}
+
+/* Map interaction styles */
+.map-dragging {
+  cursor: grabbing !important;
+}
+
+.map-dragging * {
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

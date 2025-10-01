@@ -1,27 +1,44 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import MapView from '@/components/MapView'
+import DashboardViewMatrix from '@/components/DashboardViewMatrix'
 import Navigation from '@/components/Navigation'
 
 export default function Home() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [currentView, setCurrentView] = useState<'map' | 'dashboard'>('map')
 
+  // Initialize view from URL parameter
+  useEffect(() => {
+    const viewParam = searchParams.get('view')
+    if (viewParam === 'dashboard' || viewParam === 'map') {
+      setCurrentView(viewParam)
+    }
+  }, [searchParams])
+
+  // Update URL when view changes
+  const handleViewChange = (view: 'map' | 'dashboard') => {
+    setCurrentView(view)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('view', view)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
+
   return (
-    <main className="min-h-screen bg-gray-100">
-      <Navigation currentView={currentView} onViewChange={setCurrentView} />
+    <main className="min-h-screen bg-gray-50">
+      <Navigation currentView={currentView} onViewChange={handleViewChange} />
       
       {currentView === 'map' && (
-        <div className="map-container">
+        <div className="map-container h-[calc(100vh-80px)]">
           <MapView />
         </div>
       )}
       
       {currentView === 'dashboard' && (
-        <div className="p-6">
-          <h1 className="text-2xl font-bold mb-6">Project Dashboard</h1>
-          <p className="text-gray-600">Dashboard view coming soon...</p>
-        </div>
+        <DashboardViewMatrix />
       )}
     </main>
   )
